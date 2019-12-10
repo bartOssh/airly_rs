@@ -1,4 +1,5 @@
 mod endpoints;
+use crate::request;
 use crate::response;
 use reqwest;
 use reqwest::{
@@ -32,6 +33,7 @@ impl AirlyClient {
             "Wrong api key length",
         )))
     }
+
     /// calls api to get installation properties for given id
     ///
     /// # Arguments:
@@ -51,6 +53,38 @@ impl AirlyClient {
         let installation = res.json::<response::Installation>()?;
         Ok(installation)
     }
+
+    /// calls api to get nearest installations
+    ///
+    /// # Arguments:
+    /// * circle - geo circle to fetch installations from
+    /// * max_results - max number of installations to fetch
+    ///
+    /// # Returns Success of installations vector if installations are present in the circle
+    ///           or Error otherwise
+    ///
+    pub fn get_nearest(
+        self,
+        circle: request::GeoCircle,
+        max_results: i32,
+    ) -> Result<Vec<response::Installation>, Box<dyn std::error::Error>> {
+        let mut uri_composed = endpoints::BASIC.to_owned();
+        let lat = &format!("?lat={}", circle.point.lat);
+        let lng = &format!("&lng={}", circle.point.lng);
+        let max_dist = &format!("&maxDistanceKM={}", circle.radius_km);
+        let _max_results = &format!("&maxResults={}", max_results);
+        uri_composed.push_str(endpoints::INSTALATIONS);
+        uri_composed.push_str(lat);
+        uri_composed.push_str(lng);
+        uri_composed.push_str(max_dist);
+        uri_composed.push_str(_max_results);
+        println!("{:?}", &uri_composed);
+        let mut res = self.get(&uri_composed)?;
+        let installations = res.json::<Vec<response::Installation>>()?;
+        println!("{:?}", installations);
+        Ok(installations)
+    }
+
     fn get(self, uri_req: &String) -> Result<Response, Box<dyn std::error::Error>> {
         let res = self
             .client
@@ -64,18 +98,41 @@ impl AirlyClient {
 
 #[cfg(test)]
 mod test_clinet {
+    const API_KEY: &str = "6Yfz0bPj0bwnP7CEjJnQEgKEBeAWZqjU";
     #[test]
-    fn test_connection() {
-        const API_KEY: &str = "";
+    fn test_get_instalation() {
         if API_KEY.len() == 0 {
-            println!("Please set API_KEY const for tests.");
-            assert_eq!(true, false);
+            panic!("Please set API_KEY const for tests.");
         }
+        let id = 34;
         if let Ok(client) = super::AirlyClient::new(API_KEY) {
-            let result = client.get_instalation(34);
-            println!("{:?}", result);
+            if let Ok(installation) = client.get_instalation(id) {
+                println!("Fetched installation: {:?}", installation);
+                assert_eq!(installation.id, id);
+            } else {
+                panic!("Error while fetching data, run with: -- --nocapture, to see details.");
+            }
         } else {
-            assert_eq!(true, false);
+            panic!("Cannot establish https connection.")
+        }
+    }
+    #[test]
+    fn test_get_nearest() {
+        if API_KEY.len() == 0 {
+            panic!("Please set API_KEY const for tests.");
+        }
+        // /nearest?lat=50.062006&lng=19.940984&maxDistanceKM=3&maxResults=1
+        let circle =
+            super::request::GeoCircle::new(super::request::GeoPoint::new(50.062006, 9.940984), 10);
+        if let Ok(client) = super::AirlyClient::new(API_KEY) {
+            if let Ok(installations) = client.get_nearest(circle, 3) {
+                println!("Fetched installations: {:?}", installations);
+                assert_eq!(installations.len(), 3);
+            } else {
+                panic!("Error while fetching data, run with: -- --nocapture, to see details.");
+            }
+        } else {
+            panic!("Cannot establish https connection.")
         }
     }
 }
