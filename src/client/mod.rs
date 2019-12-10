@@ -57,7 +57,7 @@ impl AirlyClient {
     /// calls api to get nearest installations
     ///
     /// # Arguments:
-    /// * circle - geo circle to fetch installations from
+    /// * circle - geo circle that describes area to fetch installations from
     /// * max_results - max number of installations to fetch
     ///
     /// # Returns Success of installations vector if installations are present in the circle
@@ -98,7 +98,7 @@ impl AirlyClient {
 
 #[cfg(test)]
 mod test_clinet {
-    const API_KEY: &str = "6Yfz0bPj0bwnP7CEjJnQEgKEBeAWZqjU";
+    const API_KEY: &str = "";
     #[test]
     fn test_get_instalation() {
         if API_KEY.len() == 0 {
