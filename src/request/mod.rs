@@ -1,11 +1,11 @@
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GeoPoint {
-    pub lat: f64,
-    pub lng: f64,
+    pub lat: f32,
+    pub lng: f32,
 }
 
 impl GeoPoint {
-    pub fn new(lat: f64, lng: f64) -> Self {
+    pub fn new(lat: f32, lng: f32) -> Self {
         Self { lat, lng }
     }
 }

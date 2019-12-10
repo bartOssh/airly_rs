@@ -1,2 +1,4 @@
-# airly_rs
-Library handler for Airly API
+# Airly-rs
+
+Handler for Airly API
+
