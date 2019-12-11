@@ -80,6 +80,10 @@ impl AirlyClient {
         Ok(installations)
     }
 
+    /// Get indexes types
+    ///
+    /// # Returns Success of indexes types or Error otherwise
+    ///
     pub fn get_indexes(self) -> Result<Vec<response::IndexType>, Box<dyn std::error::Error>> {
         let mut uri_composed = endpoints::BASIC.to_owned();
         uri_composed.push_str(&format!("{}", endpoints::INDEXES));
@@ -88,6 +92,10 @@ impl AirlyClient {
         Ok(indexes_types)
     }
 
+    /// Get measurements types
+    ///
+    /// # Returns Success of measurements types or Error otherwise
+    ///
     pub fn get_measurements_types(
         self,
     ) -> Result<Vec<response::MeasurementType>, Box<dyn std::error::Error>> {
@@ -98,6 +106,15 @@ impl AirlyClient {
         Ok(measurements_types)
     }
 
+    /// Get measurements of specific installation
+    ///
+    /// # Arguments:
+    /// * id - id of the installation We want to get
+    /// * index_type - type of index of the installation measurements
+    /// * included_wind - specifies if wind measurement should be included or not
+    ///
+    /// # Returns Success of measurements or Error otherwise
+    ///
     pub fn get_instalation_measurements(
         self,
         id: i32,
@@ -133,6 +150,14 @@ impl AirlyClient {
         }
     }
 
+    /// Get measurements of installation nearest the specified circle
+    ///
+    /// # Arguments:
+    /// * index_type - type of index of the installation measurements
+    /// * circle - circle from which center We want to find out distance and in what range from tis center
+    ///
+    /// # Returns Success of measurements or Error otherwise
+    ///
     pub fn get_measurements_nearest(
         self,
         index_type: response::IndexType,
@@ -164,6 +189,14 @@ impl AirlyClient {
         }
     }
 
+    /// Get measurements of interpolated values for given point on map
+    ///
+    /// # Arguments:
+    /// * index_type - type of index of the installation measurements
+    /// * point - location for which interpolation of measurements should be calculated
+    ///
+    /// # Returns Success of interpolated measurements or Error otherwise
+    ///
     pub fn get_measurements_point(
         self,
         index_type: response::IndexType,
@@ -180,9 +213,9 @@ impl AirlyClient {
                 point.lng,
             ));
             let mut res = self.get(&uri_composed)?;
-            println!("{:?}", &res);
+            println!("\n{:?}\n", &res);
             let text = res.text()?;
-            println!("{}", &text);
+            println!("\n{}\n", &text);
             let measurements = res.json::<response::Measurements>()?;
             println!("{:?}", measurements);
             return Ok(measurements);
@@ -220,7 +253,7 @@ mod test_clinet {
         let id = 34;
         if let Ok(client) = super::AirlyClient::new(API_KEY) {
             if let Ok(installation) = client.get_instalation(id) {
-                println!("Fetched installation: {:?}", installation);
+                println!("Fetched installation: \n{:?}\n", installation);
                 assert_eq!(installation.id, id);
             } else {
                 panic!(INFO_DETAILS);
@@ -238,7 +271,7 @@ mod test_clinet {
             super::request::GeoCircle::new(super::request::GeoPoint::new(54.347279, 18.653846), 5);
         if let Ok(client) = super::AirlyClient::new(API_KEY) {
             if let Ok(installations) = client.get_nearest(circle, 3) {
-                println!("Fetched installations: {:?}", installations);
+                println!("Fetched installations: \n{:?}\n", installations);
                 assert_eq!(installations.len(), 3);
             } else {
                 panic!(INFO_DETAILS);
@@ -251,7 +284,7 @@ mod test_clinet {
     fn test_get_indexes() {
         if let Ok(client) = super::AirlyClient::new(API_KEY) {
             if let Ok(index_types) = client.get_indexes() {
-                println!("Fetched indexes: {:?}", index_types);
+                println!("Fetched indexes: \n{:?}\n", index_types);
                 assert_eq!(index_types.len() > 0, true);
             } else {
                 panic!(INFO_DETAILS);
@@ -261,7 +294,7 @@ mod test_clinet {
         }
     }
     #[test]
-    #[ignore]
+    // #[ignore]
     fn test_get_instalation_measurements() {
         if let Ok(client) = super::AirlyClient::new(API_KEY) {
             let id = 34;
@@ -272,7 +305,7 @@ mod test_clinet {
                 println!("Fetched measurements: {:?}", measurements);
                 if let Some(current) = measurements.current.clone() {
                     if let Some(values) = current.values.clone() {
-                        println!("{:?}", measurements);
+                        println!("Measurements: \n{:?}\n", measurements);
                         assert_eq!(values.len() > 0, true);
                     }
                 }
@@ -288,7 +321,7 @@ mod test_clinet {
     fn test_get_measurements_types() {
         if let Ok(client) = super::AirlyClient::new(API_KEY) {
             if let Ok(measurements_types) = client.get_measurements_types() {
-                println!("Fetched measurements types: {:?}", measurements_types);
+                println!("Fetched measurements types: \n{:?}\n", measurements_types);
                 assert_eq!(measurements_types.len() > 0, true);
             } else {
                 panic!(INFO_DETAILS);
