@@ -136,11 +136,8 @@ impl AirlyClient {
                 id
             ));
             let mut res = self.get(&uri_composed)?;
-            println!("{:?}", &res);
             let text = res.text()?;
-            println!("{}", &text);
-            let measurements = res.json::<response::Measurements>()?;
-            println!("{:?}", measurements);
+            let measurements: response::Measurements = serde_json::from_str(&text)?;
             return Ok(measurements);
         } else {
             return Err(Box::new(Error::new(
@@ -175,11 +172,8 @@ impl AirlyClient {
                 circle.radius_km,
             ));
             let mut res = self.get(&uri_composed)?;
-            println!("{:?}", &res);
             let text = res.text()?;
-            println!("{}", &text);
-            let measurements = res.json::<response::Measurements>()?;
-            println!("{:?}", measurements);
+            let measurements: response::Measurements = serde_json::from_str(&text)?;
             return Ok(measurements);
         } else {
             return Err(Box::new(Error::new(
@@ -213,11 +207,8 @@ impl AirlyClient {
                 point.lng,
             ));
             let mut res = self.get(&uri_composed)?;
-            println!("\n{:?}\n", &res);
             let text = res.text()?;
-            println!("\n{}\n", &text);
-            let measurements = res.json::<response::Measurements>()?;
-            println!("{:?}", measurements);
+            let measurements: response::Measurements = serde_json::from_str(&text)?;
             return Ok(measurements);
         } else {
             return Err(Box::new(Error::new(
@@ -248,86 +239,147 @@ mod test_clinet {
     #[test]
     fn test_get_instalation() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
-        }
-        let id = 34;
-        if let Ok(client) = super::AirlyClient::new(API_KEY) {
-            if let Ok(installation) = client.get_instalation(id) {
-                println!("Fetched installation: \n{:?}\n", installation);
-                assert_eq!(installation.id, id);
-            } else {
-                panic!(INFO_DETAILS);
-            }
+            panic!("Please set API_KEY const for tests");
         } else {
-            panic!(INFO_CONNECTION)
+            let id = 34;
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                if let Ok(installation) = client.get_instalation(id) {
+                    println!("Fetched installation for id: \n{:?}\n", installation);
+                    assert_eq!(installation.id, id);
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+            } else {
+                panic!(INFO_CONNECTION)
+            }
         }
     }
     #[test]
     fn test_get_nearest() {
         if API_KEY.len() == 0 {
             panic!("Please set API_KEY for tests.");
-        }
-        let circle =
-            super::request::GeoCircle::new(super::request::GeoPoint::new(54.347279, 18.653846), 5);
-        if let Ok(client) = super::AirlyClient::new(API_KEY) {
-            if let Ok(installations) = client.get_nearest(circle, 3) {
-                println!("Fetched installations: \n{:?}\n", installations);
-                assert_eq!(installations.len(), 3);
-            } else {
-                panic!(INFO_DETAILS);
-            }
         } else {
-            panic!(INFO_CONNECTION)
+            let circle = super::request::GeoCircle::new(
+                super::request::GeoPoint::new(54.347279, 18.653846),
+                5,
+            );
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                if let Ok(installations) = client.get_nearest(circle, 3) {
+                    println!("Fetched installations for nearest: \n{:?}\n", installations);
+                    assert_eq!(installations.len(), 3);
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+            } else {
+                panic!(INFO_CONNECTION)
+            }
         }
     }
     #[test]
     fn test_get_indexes() {
-        if let Ok(client) = super::AirlyClient::new(API_KEY) {
-            if let Ok(index_types) = client.get_indexes() {
-                println!("Fetched indexes: \n{:?}\n", index_types);
-                assert_eq!(index_types.len() > 0, true);
-            } else {
-                panic!(INFO_DETAILS);
-            }
+        if API_KEY.len() == 0 {
+            panic!("Please set API_KEY for tests.");
         } else {
-            panic!(INFO_CONNECTION)
-        }
-    }
-    #[test]
-    // #[ignore]
-    fn test_get_instalation_measurements() {
-        if let Ok(client) = super::AirlyClient::new(API_KEY) {
-            let id = 34;
-            let name = Some(format!("AIRLY_CAQI"));
-            let level = None;
-            let index_type = super::response::IndexType { name, level };
-            if let Ok(measurements) = client.get_instalation_measurements(id, index_type, true) {
-                println!("Fetched measurements: {:?}", measurements);
-                if let Some(current) = measurements.current.clone() {
-                    if let Some(values) = current.values.clone() {
-                        println!("Measurements: \n{:?}\n", measurements);
-                        assert_eq!(values.len() > 0, true);
-                    }
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                if let Ok(index_types) = client.get_indexes() {
+                    println!("Fetched indexes: \n{:?}\n", index_types);
+                    assert_eq!(index_types.len() > 0, true);
+                } else {
+                    panic!(INFO_DETAILS);
                 }
             } else {
-                panic!(INFO_DETAILS);
+                panic!(INFO_CONNECTION)
             }
-        } else {
-            panic!(INFO_CONNECTION)
         }
     }
-
+    #[test]
+    fn test_get_instalation_measurements() {
+        if API_KEY.len() == 0 {
+            panic!("Please set API_KEY for tests.");
+        } else {
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                let id = 34;
+                let name = Some(format!("AIRLY_CAQI"));
+                let level = None;
+                let index_type = super::response::IndexType { name, level };
+                if let Ok(measurements) = client.get_instalation_measurements(id, index_type, true)
+                {
+                    println!("Fetched measurements for id: {:?}", measurements);
+                    if let Some(current) = measurements.current.clone() {
+                        assert_eq!(current.values.len() > 0, true);
+                    }
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+            } else {
+                panic!(INFO_CONNECTION)
+            }
+        }
+    }
+    #[test]
+    fn test_get_measurements_nearest() {
+        if API_KEY.len() == 0 {
+            panic!("Please set API_KEY for tests.");
+        } else {
+            let circle = super::request::GeoCircle::new(
+                super::request::GeoPoint::new(54.347279, 18.653846),
+                5,
+            );
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                let name = Some(format!("AIRLY_CAQI"));
+                let level = None;
+                let index_type = super::response::IndexType { name, level };
+                if let Ok(measurements) = client.get_measurements_nearest(index_type, circle) {
+                    println!("Fetched measurements for nearest: {:?}", measurements);
+                    if let Some(current) = measurements.current.clone() {
+                        assert_eq!(current.values.len() > 0, true);
+                    }
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+            } else {
+                panic!(INFO_CONNECTION)
+            }
+        }
+    }
+    #[test]
+    fn test_get_measurements_point() {
+        if API_KEY.len() == 0 {
+            panic!("Please set API_KEY for tests.");
+        } else {
+            let point = super::request::GeoPoint::new(54.347279, 18.653846);
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                let name = Some(format!("AIRLY_CAQI"));
+                let level = None;
+                let index_type = super::response::IndexType { name, level };
+                if let Ok(measurements) = client.get_measurements_point(index_type, point) {
+                    println!("Fetched measurements for point: {:?}", measurements);
+                    if let Some(current) = measurements.current.clone() {
+                        assert_eq!(current.values.len() > 0, true);
+                    }
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+            } else {
+                panic!(INFO_CONNECTION)
+            }
+        }
+    }
     #[test]
     fn test_get_measurements_types() {
-        if let Ok(client) = super::AirlyClient::new(API_KEY) {
-            if let Ok(measurements_types) = client.get_measurements_types() {
-                println!("Fetched measurements types: \n{:?}\n", measurements_types);
-                assert_eq!(measurements_types.len() > 0, true);
-            } else {
-                panic!(INFO_DETAILS);
-            }
+        if API_KEY.len() == 0 {
+            panic!("Please set API_KEY for tests.");
         } else {
-            panic!(INFO_CONNECTION)
+            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+                if let Ok(measurements_types) = client.get_measurements_types() {
+                    println!("Fetched measurements types: \n{:?}\n", measurements_types);
+                    assert_eq!(measurements_types.len() > 0, true);
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+            } else {
+                panic!(INFO_CONNECTION)
+            }
         }
     }
 }

@@ -86,18 +86,18 @@ pub struct AveragedValues {
     #[serde(rename = "tillDateTime")]
     pub till_date_time: Option<String>,
     /// List of raw measurements, averaged over specified period. Measurement types available in this list depend on the capabilities of the queried installation, e.g. particulate matter (PM1, PM25, PM10), gases (CO, NO2, SO2, O3) or weather conditions (temperature, humidity, pressure)
-    pub values: Option<Vec<Value>>,
+    pub values: Vec<Value>,
     /// List of indexes calculated from the values available. Indexes are defined by relevant national and international institutions, e.g. EU, GIOŚ or US EPA
-    pub indexes: Option<Vec<Index>>,
+    pub indexes: Vec<Index>,
     /// List of 'standard' values, or 'limits' for pollutants that should not be exceeded over certain period of time. Limits are defined by relevant national and international institutions, like e.g. WHO or EPA. For each standard limit in this list there is also a corresponding measurement expressed as a percent value of the limit
-    pub standards: Option<Vec<Standard>>,
+    pub standards: Vec<Standard>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Measurements {
     pub current: Option<AveragedValues>,
-    pub history: Option<Vec<AveragedValues>>,
-    pub forecast: Option<Vec<AveragedValues>>,
+    pub history: Vec<AveragedValues>,
+    pub forecast: Vec<AveragedValues>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
