@@ -236,10 +236,11 @@ mod test_clinet {
     const INFO_DETAILS: &str =
         "Error while fetching data, run with: -- --nocapture, to see details.";
     const INFO_CONNECTION: &str = "Cannot establish https connection.";
+    const API_KEY_INFO: &str = "Please set API_KEY const for tests";
     #[test]
     fn test_get_instalation() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY const for tests");
+            panic!(API_KEY_INFO);
         } else {
             let id = 34;
             if let Ok(client) = super::AirlyClient::new(API_KEY) {
@@ -257,7 +258,7 @@ mod test_clinet {
     #[test]
     fn test_get_nearest() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
+            panic!(API_KEY_INFO);
         } else {
             let circle = super::request::GeoCircle::new(
                 super::request::GeoPoint::new(54.347279, 18.653846),
@@ -278,7 +279,7 @@ mod test_clinet {
     #[test]
     fn test_get_indexes() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
+            panic!(API_KEY_INFO);
         } else {
             if let Ok(client) = super::AirlyClient::new(API_KEY) {
                 if let Ok(index_types) = client.get_indexes() {
@@ -295,7 +296,7 @@ mod test_clinet {
     #[test]
     fn test_get_instalation_measurements() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
+            panic!(API_KEY_INFO);
         } else {
             if let Ok(client) = super::AirlyClient::new(API_KEY) {
                 let id = 34;
@@ -319,7 +320,7 @@ mod test_clinet {
     #[test]
     fn test_get_measurements_nearest() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
+            panic!(API_KEY_INFO);
         } else {
             let circle = super::request::GeoCircle::new(
                 super::request::GeoPoint::new(54.347279, 18.653846),
@@ -345,7 +346,7 @@ mod test_clinet {
     #[test]
     fn test_get_measurements_point() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
+            panic!(API_KEY_INFO);
         } else {
             let point = super::request::GeoPoint::new(54.347279, 18.653846);
             if let Ok(client) = super::AirlyClient::new(API_KEY) {
@@ -368,7 +369,7 @@ mod test_clinet {
     #[test]
     fn test_get_measurements_types() {
         if API_KEY.len() == 0 {
-            panic!("Please set API_KEY for tests.");
+            panic!(API_KEY_INFO);
         } else {
             if let Ok(client) = super::AirlyClient::new(API_KEY) {
                 if let Ok(measurements_types) = client.get_measurements_types() {
