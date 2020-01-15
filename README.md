@@ -14,7 +14,7 @@ At this point it is implemented with synchronous code execution.
 There is future plan for to add asynchronous calls based on new async/await rust implementation.
 
 
-## Dependencies:
+## Dependencies
 
  - Project build with rust 2018 edition
  - serde: "1.0.103"
@@ -22,13 +22,13 @@ There is future plan for to add asynchronous calls based on new async/await rust
  - serde_derive: "1.0.103"
  - reqwest: "0.9.22"
 
-## Build and test:
+## Build and test
 
 - version is not set yet, and usage as library is not ready
 - build with: `cargo build --release`
-- test with: `cargo test --verbose`, for printing downloaded data: `cargo test -- --nocapture`
+- test with: `cargo test --verbose`, for printing downloaded data: `API_KEY=your_api_key cargo test -- --nocapture`
 
-### Future development steps:
+### Future development steps
 
 - 1 - documentation examples
 - 2 - test integration with GitHub Rust build and test cargo action
@@ -36,3 +36,7 @@ There is future plan for to add asynchronous calls based on new async/await rust
 - 4 - test coverage
 - 5 - versioning and deployment to cargo crates.
 
+Collaborators:
+
+[Bartosz Lenart](https://github.com/bartOssh)
+[Oskar Piechowski](https://github.com/opiechow)

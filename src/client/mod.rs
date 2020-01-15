@@ -1,12 +1,19 @@
 mod endpoints;
-use crate::request;
-use crate::response;
+use crate::types;
 use reqwest;
 use reqwest::{
     header::{HeaderName, HeaderValue, ACCEPT, ACCEPT_LANGUAGE},
     Response,
 };
 use std::io::{Error, ErrorKind};
+
+const API_KEY_LEN: usize = 32;
+const ERR_API_KEY: &str = "Wrong api key length";
+
+enum IncludeWind {
+    YES,
+    NO
+}
 
 #[derive(Debug, Clone)]
 pub struct AirlyClient {
@@ -15,40 +22,44 @@ pub struct AirlyClient {
 }
 
 impl AirlyClient {
-    /// Constructs AirlyClinet
+    /// Constructs AirlyClient
     ///
     /// # Arguments:
     /// * api_key - personal api key that can be obtained from https://developer.airly.eu/login
     ///
-    /// # Returns instance of AirlyClient struct
+    /// # Returns instance of AirlyClient struct if api_key of correct length Error otherwise
     ///
-    pub fn new(api_key: &'static str) -> Result<Self, Box<dyn std::error::Error>> {
-        if api_key.len() == 32 {
+    pub fn new(api_key: String) -> Result<Self, Box<dyn std::error::Error>> {
+        if api_key.len() == API_KEY_LEN {
             let client = reqwest::Client::new();
-            let api_key = HeaderValue::from_static(api_key);
-            return Ok(Self { api_key, client });
+            let _api_key = HeaderValue::from_str(&api_key);
+            if let Ok(api_key) = _api_key {
+                return Ok(Self { api_key, client });
+            }
         }
         Err(Box::new(Error::new(
             ErrorKind::Other,
-            "Wrong api key length",
+            format!("{}, expected: {}, got: {}", ERR_API_KEY, API_KEY_LEN, &api_key.len()),
         )))
     }
 
     /// Get installation properties for given id
     ///
     /// # Arguments:
-    /// * id - id of installation properties We wont to fetch
+    /// * id - id of installation properties We want to fetch
     ///
     /// # Returns Success of installation properties if installation is present or Error otherwise
     ///
-    pub fn get_instalation(
+    pub fn get_installation(
         self,
         id: i32,
-    ) -> Result<response::Installation, Box<dyn std::error::Error>> {
-        let mut uri_composed = endpoints::BASIC.to_owned();
-        uri_composed.push_str(&format!("{}/{}", endpoints::INSTALATIONS, id));
+    ) -> Result<types::Installation, Box<dyn std::error::Error>> {
+        let mut uri_composed = String::new();
+        uri_composed.push_str(
+            &format!("{}/{}/{}", endpoints::BASE_URL, endpoints::INSTALLATION_URL, id)
+        );
         let mut res = self.get(&uri_composed)?;
-        let installation = res.json::<response::Installation>()?;
+        let installation = res.json::<types::Installation>()?;
         Ok(installation)
     }
 
@@ -62,21 +73,23 @@ impl AirlyClient {
     ///
     pub fn get_nearest(
         self,
-        circle: request::GeoCircle,
-        max_results: i32,
-    ) -> Result<Vec<response::Installation>, Box<dyn std::error::Error>> {
-        let mut uri_composed = endpoints::BASIC.to_owned();
+        circle: types::GeoCircle,
+        max_results: u32,
+    ) -> Result<Vec<types::Installation>, Box<dyn std::error::Error>> {
+        let mut uri_composed = String::new();
+        let point = circle.get_point();
         uri_composed.push_str(&format!(
-            "{}/{}?lat={}&lng={}&maxDistanceKM={}&maxResults={}",
-            endpoints::INSTALATIONS,
-            endpoints::NEAREST,
-            circle.point.lat,
-            circle.point.lng,
-            circle.radius_km,
+            "{}/{}/{}?lat={}&lng={}&maxDistanceKM={}&maxResults={}",
+            endpoints::BASE_URL,
+            endpoints::INSTALLATIONS_URL,
+            endpoints::NEAREST_URL,
+            point.get_lat(),
+            point.get_lng(),
+            circle.get_radius_km(),
             max_results
         ));
         let mut res = self.get(&uri_composed)?;
-        let installations = res.json::<Vec<response::Installation>>()?;
+        let installations = res.json::<Vec<types::Installation>>()?;
         Ok(installations)
     }
 
@@ -84,61 +97,44 @@ impl AirlyClient {
     ///
     /// # Returns Success of indexes types or Error otherwise
     ///
-    pub fn get_indexes(self) -> Result<Vec<response::IndexType>, Box<dyn std::error::Error>> {
-        let mut uri_composed = endpoints::BASIC.to_owned();
-        uri_composed.push_str(&format!("{}", endpoints::INDEXES));
+    pub fn get_indices(self) -> Result<Vec<types::IndexType>, Box<dyn std::error::Error>> {
+        let mut uri_composed = String::new();
+        uri_composed.push_str(&format!("{}{}", endpoints::BASE_URL, endpoints::INDICES_URL));
         let mut res = self.get(&uri_composed)?;
-        let indexes_types = res.json::<Vec<response::IndexType>>()?;
+        let indexes_types = res.json::<Vec<types::IndexType>>()?;
         Ok(indexes_types)
     }
 
-    /// Get measurements types
+    /// Get meta measurement types
     ///
-    /// # Returns Success of measurements types or Error otherwise
+    /// # Returns Success of measurement types or Error otherwise
     ///
-    pub fn get_measurements_types(
+    pub fn get_meta_measurements(
         self,
-    ) -> Result<Vec<response::MeasurementType>, Box<dyn std::error::Error>> {
-        let mut uri_composed = endpoints::BASIC.to_owned();
-        uri_composed.push_str(&format!("{}", endpoints::MEASUREMENTS_TYPES));
+    ) -> Result<Vec<types::MeasurementType>, Box<dyn std::error::Error>> {
+        let mut uri_composed = String::new();
+        uri_composed.push_str(&format!("{}", endpoints::META_MEASUREMENTS_URL));
         let mut res = self.get(&uri_composed)?;
-        let measurements_types = res.json::<Vec<response::MeasurementType>>()?;
+        let measurements_types = res.json::<Vec<types::MeasurementType>>()?;
         Ok(measurements_types)
     }
 
-    /// Get measurements of specific installation
+    /// Get measurements of specific installation including wind
     ///
     /// # Arguments:
     /// * id - id of the installation We want to get
     /// * index_type - type of index of the installation measurements
-    /// * included_wind - specifies if wind measurement should be included or not
     ///
-    /// # Returns Success of measurements or Error otherwise
+    /// # Returns Success of measurements with wind value or Error otherwise
     ///
-    pub fn get_instalation_measurements(
+    pub fn get_installation_measurements_with_wind(
         self,
-        id: i32,
-        index_type: response::IndexType,
-        included_wind: bool,
-    ) -> Result<response::Measurements, Box<dyn std::error::Error>> {
-        if let Some(name) = index_type.name {
-            let mut uri_composed = endpoints::BASIC.to_owned();
-            let mut included_wind_query = "";
-            if included_wind {
-                included_wind_query = "includeWind=true&"
-            }
-            uri_composed.push_str(&format!(
-                "{}/{}?{}indexType={}&installationId={}",
-                endpoints::MEASUREMENTS,
-                endpoints::INSTALATION,
-                included_wind_query,
-                name,
-                id
-            ));
-            let mut res = self.get(&uri_composed)?;
-            let text = res.text()?;
-            let measurements: response::Measurements = serde_json::from_str(&text)?;
-            return Ok(measurements);
+        id: u32,
+        index_type: types::IndexType,
+    ) -> Result<types::Measurements, Box<dyn std::error::Error>> {
+        if let Some(type_name) = index_type.name {
+            let uri_composed = get_measurements_query_string(id, type_name, IncludeWind::YES);
+            self.get_installation_measurements(uri_composed)
         } else {
             return Err(Box::new(Error::new(
                 ErrorKind::InvalidInput,
@@ -147,33 +143,59 @@ impl AirlyClient {
         }
     }
 
-    /// Get measurements of installation nearest the specified circle
+    /// Get measurements of specific installation but don't include wind
+    ///
+    /// # Arguments:
+    /// * id - id of the installation We want to get
+    /// * index_type - type of index of the installation measurements
+    ///
+    /// # Returns Success of measurements without wind value or Error otherwise
+    ///
+    pub fn get_installation_measurements_without_wind(
+        self,
+        id: u32,
+        index_type: types::IndexType,
+    ) -> Result<types::Measurements, Box<dyn std::error::Error>> {
+        if let Some(type_name) = index_type.name {
+            let uri_composed = get_measurements_query_string(id, type_name, IncludeWind::NO);
+            self.get_installation_measurements(uri_composed)
+        } else {
+            return Err(Box::new(Error::new(
+                ErrorKind::InvalidInput,
+                "IndexType.name is None",
+            )));
+        }
+    }
+
+    /// Get measurements of installation nearest the specified point in circle boundaries
     ///
     /// # Arguments:
     /// * index_type - type of index of the installation measurements
-    /// * circle - circle from which center We want to find out distance and in what range from tis center
+    /// * circle - circle describing center point and boundaries
     ///
     /// # Returns Success of measurements or Error otherwise
     ///
     pub fn get_measurements_nearest(
         self,
-        index_type: response::IndexType,
-        circle: request::GeoCircle,
-    ) -> Result<response::Measurements, Box<dyn std::error::Error>> {
+        index_type: types::IndexType,
+        circle: types::GeoCircle,
+    ) -> Result<types::Measurements, Box<dyn std::error::Error>> {
         if let Some(name) = index_type.name {
-            let mut uri_composed = endpoints::BASIC.to_owned();
+            let mut uri_composed = String::new();
+            let point = circle.get_point();
             uri_composed.push_str(&format!(
-                "{}/{}?indexType={}&lat={}&lng={}&maxDistanceKM={}",
-                endpoints::MEASUREMENTS,
-                endpoints::NEAREST,
+                "{}/{}/{}?indexType={}&lat={}&lng={}&maxDistanceKM={}",
+                endpoints::BASE_URL,
+                endpoints::MEASUREMENTS_URL,
+                endpoints::NEAREST_URL,
                 name,
-                circle.point.lat,
-                circle.point.lng,
-                circle.radius_km,
+                point.get_lat(),
+                point.get_lng(),
+                circle.get_radius_km(),
             ));
             let mut res = self.get(&uri_composed)?;
             let text = res.text()?;
-            let measurements: response::Measurements = serde_json::from_str(&text)?;
+            let measurements: types::Measurements = serde_json::from_str(&text)?;
             return Ok(measurements);
         } else {
             return Err(Box::new(Error::new(
@@ -193,22 +215,23 @@ impl AirlyClient {
     ///
     pub fn get_measurements_point(
         self,
-        index_type: response::IndexType,
-        point: request::GeoPoint,
-    ) -> Result<response::Measurements, Box<dyn std::error::Error>> {
+        index_type: types::IndexType,
+        point: types::GeoPoint,
+    ) -> Result<types::Measurements, Box<dyn std::error::Error>> {
         if let Some(name) = index_type.name {
-            let mut uri_composed = endpoints::BASIC.to_owned();
+            let mut uri_composed = String::new();
             uri_composed.push_str(&format!(
-                "{}/{}?indexType={}&lat={}&lng={}",
-                endpoints::MEASUREMENTS,
-                endpoints::POINT,
+                "{}/{}/{}?indexType={}&lat={}&lng={}",
+                endpoints::BASE_URL,
+                endpoints::MEASUREMENTS_URL,
+                endpoints::POINT_URL,
                 name,
-                point.lat,
-                point.lng,
+                point.get_lat(),
+                point.get_lng(),
             ));
             let mut res = self.get(&uri_composed)?;
             let text = res.text()?;
-            let measurements: response::Measurements = serde_json::from_str(&text)?;
+            let measurements: types::Measurements = serde_json::from_str(&text)?;
             return Ok(measurements);
         } else {
             return Err(Box::new(Error::new(
@@ -216,6 +239,15 @@ impl AirlyClient {
                 "IndexType.name is None",
             )));
         }
+    }
+
+    fn get_installation_measurements(
+        self, uri_composed: String
+    ) -> Result<types::Measurements, Box<dyn std::error::Error>> {
+        let mut res = self.get(&uri_composed)?;
+        let text = res.text()?;
+        let measurements: types::Measurements = serde_json::from_str(&text)?;
+        return Ok(measurements);
     }
 
     fn get(self, uri_req: &String) -> Result<Response, Box<dyn std::error::Error>> {
@@ -230,21 +262,42 @@ impl AirlyClient {
     }
 }
 
+fn get_measurements_query_string(id: u32, type_name: String, wind: IncludeWind) -> String {
+    let mut uri_composed = String::new();
+    let wind_string = match wind {
+        IncludeWind::YES => format!("includeWind=true&"),
+        IncludeWind::NO => format!(""),
+    };
+    uri_composed.push_str(&format!(
+        "{}/{}/{}?{}indexType={}&installationId={}",
+        endpoints::BASE_URL,
+        endpoints::MEASUREMENTS_URL,
+        endpoints::INSTALLATIONS_URL,
+        wind_string,
+        type_name,
+        id
+    ));
+    uri_composed
+}
+
 #[cfg(test)]
-mod test_clinet {
-    const API_KEY: &str = "";
+mod test_client {
+    use std::env;
+    use dotenv::dotenv;
     const INFO_DETAILS: &str =
         "Error while fetching data, run with: -- --nocapture, to see details.";
     const INFO_CONNECTION: &str = "Cannot establish https connection.";
-    const API_KEY_INFO: &str = "Please set API_KEY const for tests";
+    const API_KEY_INFO: &str = "API_KEY has wrong length";
     #[test]
-    fn test_get_instalation() {
-        if API_KEY.len() == 0 {
+    fn test_get_installation() {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
             let id = 34;
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
-                if let Ok(installation) = client.get_instalation(id) {
+            if let Ok(client) = super::AirlyClient::new(api_key) {
+                if let Ok(installation) = client.get_installation(id) {
                     println!("Fetched installation for id: \n{:?}\n", installation);
                     assert_eq!(installation.id, id);
                 } else {
@@ -257,14 +310,16 @@ mod test_clinet {
     }
     #[test]
     fn test_get_nearest() {
-        if API_KEY.len() == 0 {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            let circle = super::request::GeoCircle::new(
-                super::request::GeoPoint::new(54.347279, 18.653846),
+            let circle = super::types::GeoCircle::new(
+                super::types::GeoPoint::new(54.347279, 18.653846).unwrap(),
                 5,
-            );
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+            ).unwrap();
+            if let Ok(client) = super::AirlyClient::new(api_key) {
                 if let Ok(installations) = client.get_nearest(circle, 3) {
                     println!("Fetched installations for nearest: \n{:?}\n", installations);
                     assert_eq!(installations.len(), 3);
@@ -278,11 +333,13 @@ mod test_clinet {
     }
     #[test]
     fn test_get_indexes() {
-        if API_KEY.len() == 0 {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
-                if let Ok(index_types) = client.get_indexes() {
+            if let Ok(client) = super::AirlyClient::new(api_key) {
+                if let Ok(index_types) = client.get_indices() {
                     println!("Fetched indexes: \n{:?}\n", index_types);
                     assert_eq!(index_types.len() > 0, true);
                 } else {
@@ -294,16 +351,27 @@ mod test_clinet {
         }
     }
     #[test]
-    fn test_get_instalation_measurements() {
-        if API_KEY.len() == 0 {
+    fn test_get_installation_measurements() {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+            if let Ok(client) = super::AirlyClient::new(api_key) {
                 let id = 34;
                 let name = Some(format!("AIRLY_CAQI"));
                 let level = None;
-                let index_type = super::response::IndexType { name, level };
-                if let Ok(measurements) = client.get_instalation_measurements(id, index_type, true)
+                let index_type = super::types::IndexType { name, level };
+                if let Ok(measurements) = client.clone().get_installation_measurements_with_wind(id, index_type.clone())
+                {
+                    println!("Fetched measurements for id: {:?}", measurements);
+                    if let Some(current) = measurements.current.clone() {
+                        assert_eq!(current.values.len() > 0, true);
+                    }
+                } else {
+                    panic!(INFO_DETAILS);
+                }
+                if let Ok(measurements) = client.get_installation_measurements_without_wind(id, index_type)
                 {
                     println!("Fetched measurements for id: {:?}", measurements);
                     if let Some(current) = measurements.current.clone() {
@@ -319,17 +387,19 @@ mod test_clinet {
     }
     #[test]
     fn test_get_measurements_nearest() {
-        if API_KEY.len() == 0 {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            let circle = super::request::GeoCircle::new(
-                super::request::GeoPoint::new(54.347279, 18.653846),
+            let circle = super::types::GeoCircle::new(
+                super::types::GeoPoint::new(54.347279, 18.653846).unwrap(),
                 5,
-            );
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+            ).unwrap();
+            if let Ok(client) = super::AirlyClient::new(api_key) {
                 let name = Some(format!("AIRLY_CAQI"));
                 let level = None;
-                let index_type = super::response::IndexType { name, level };
+                let index_type = super::types::IndexType { name, level };
                 if let Ok(measurements) = client.get_measurements_nearest(index_type, circle) {
                     println!("Fetched measurements for nearest: {:?}", measurements);
                     if let Some(current) = measurements.current.clone() {
@@ -345,14 +415,16 @@ mod test_clinet {
     }
     #[test]
     fn test_get_measurements_point() {
-        if API_KEY.len() == 0 {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            let point = super::request::GeoPoint::new(54.347279, 18.653846);
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
+            let point = super::types::GeoPoint::new(54.347279, 18.653846).unwrap();
+            if let Ok(client) = super::AirlyClient::new(api_key) {
                 let name = Some(format!("AIRLY_CAQI"));
                 let level = None;
-                let index_type = super::response::IndexType { name, level };
+                let index_type = super::types::IndexType { name, level };
                 if let Ok(measurements) = client.get_measurements_point(index_type, point) {
                     println!("Fetched measurements for point: {:?}", measurements);
                     if let Some(current) = measurements.current.clone() {
@@ -368,13 +440,15 @@ mod test_clinet {
     }
     #[test]
     fn test_get_measurements_types() {
-        if API_KEY.len() == 0 {
+        dotenv().ok();
+        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            if let Ok(client) = super::AirlyClient::new(API_KEY) {
-                if let Ok(measurements_types) = client.get_measurements_types() {
-                    println!("Fetched measurements types: \n{:?}\n", measurements_types);
-                    assert_eq!(measurements_types.len() > 0, true);
+            if let Ok(client) = super::AirlyClient::new(api_key) {
+                if let Ok(measurement_types) = client.get_meta_measurements() {
+                    println!("Fetched measurements types: \n{:?}\n", measurement_types);
+                    assert_eq!(measurement_types.len() > 0, true);
                 } else {
                     panic!(INFO_DETAILS);
                 }

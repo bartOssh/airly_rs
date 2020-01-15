@@ -1,7 +1,100 @@
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Location {
-    pub latitude: f64,
-    pub longitude: f64,
+use std::io::{Error, ErrorKind};
+
+const ERR_OUT_OF_BOUNDS: &str = "Value of passed argument out of bounds";
+const MAX_EARTH_RADIUS_KM: u32 = 6371;
+const MAX_LNG: f32 = 180.0;
+const MAX_LAT: f32 = 90.0;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct GeoPoint {
+    lat: f32,
+    lng: f32,
+}
+
+impl GeoPoint {
+    /// Creates new GeoPoint if passes arguments validation
+    /// 
+    /// # Arguments:
+    /// 
+    /// * lat - latitude
+    /// * lng - longitude
+    /// 
+    /// # Returns GeoPoint struct if validation passed Error otherwise
+    /// 
+    pub fn new(lat: f32, lng: f32) -> Result<Self, Box<dyn std::error::Error>> {
+        if lat >= -MAX_LAT && lng >= -MAX_LNG && lat <= MAX_LAT && lng <= MAX_LNG {
+            return Ok(Self { lat, lng });
+        }
+        Err(Box::new(Error::new(
+            ErrorKind::Other,
+            format!(
+                "{}, expected values for lat max: +/- {} and lng max: +/- {}, got values for lat: {} and lng: {}",
+                ERR_OUT_OF_BOUNDS, MAX_LAT, MAX_LNG, lat, lng
+            )
+        )))
+    }
+
+    /// Getter for latitude value
+    /// 
+    /// # Returns latitude
+    /// 
+    pub fn get_lat(self) -> f32 {
+        self.lat
+    }
+
+    /// Getter for longitude value
+    /// 
+    /// # Returns longitude
+    /// 
+    pub fn get_lng(self) -> f32 {
+        self.lng
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct GeoCircle {
+    point: GeoPoint,
+    radius_km: u32,
+}
+
+impl GeoCircle {
+    /// Creates new GeoCircle if passes arguments validation
+    /// 
+    /// # Arguments:
+    /// 
+    /// * point - localization on the planet Earth
+    /// * radius_km - radius in km to collect data form
+    /// 
+    /// # Returns GeoCircle struct if validation passed Error otherwise
+    /// 
+    pub fn new(point: GeoPoint, radius_km: u32) -> Result<Self, Box<dyn std::error::Error>> {
+        if radius_km < MAX_EARTH_RADIUS_KM {
+            return Ok(Self { point, radius_km })
+        }
+        Err(Box::new(Error::new(
+            ErrorKind::Other,
+            format!(
+                "{}, expected radius max value: {}, got radius value: {}",
+                ERR_OUT_OF_BOUNDS, MAX_EARTH_RADIUS_KM, radius_km
+            )
+        )))
+    }
+
+    /// Getter for point struct copy
+    /// 
+    /// # Returns GeoPoint copy
+    /// 
+    pub fn get_point(self) -> GeoPoint {
+        self.point.clone()
+    }
+
+    /// Getter for point struct copy
+    /// 
+    /// # Returns GeoPoint copy
+    /// 
+    pub fn get_radius_km(self) -> u32 {
+        self.radius_km
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -30,7 +123,7 @@ pub struct Installation {
     /// ID of the installation
     pub id: i32,
     /// Location latitude and longitude
-    pub location: Location,
+    pub location: GeoPoint,
     /// Address on which installation is registered
     pub address: Address,
     /// Elevation over the sea level
