@@ -7,7 +7,9 @@ const MAX_LAT: f32 = 90.0;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct GeoPoint {
+    #[serde(rename = "latitude")]
     lat: f32,
+    #[serde(rename = "longitude")]
     lng: f32,
 }
 

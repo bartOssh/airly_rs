@@ -52,14 +52,15 @@ impl AirlyClient {
     ///
     pub fn get_installation(
         self,
-        id: i32,
+        id: u32,
     ) -> Result<types::Installation, Box<dyn std::error::Error>> {
         let mut uri_composed = String::new();
         uri_composed.push_str(
-            &format!("{}/{}/{}", endpoints::BASE_URL, endpoints::INSTALLATION_URL, id)
+            &format!("{}/{}/{}", endpoints::BASE_URL, endpoints::INSTALLATIONS_URL, id)
         );
         let mut res = self.get(&uri_composed)?;
-        let installation = res.json::<types::Installation>()?;
+        let text = res.text()?;
+        let installation: types::Installation = serde_json::from_str(&text)?;
         Ok(installation)
     }
 
@@ -99,7 +100,7 @@ impl AirlyClient {
     ///
     pub fn get_indices(self) -> Result<Vec<types::IndexType>, Box<dyn std::error::Error>> {
         let mut uri_composed = String::new();
-        uri_composed.push_str(&format!("{}{}", endpoints::BASE_URL, endpoints::INDICES_URL));
+        uri_composed.push_str(&format!("{}/{}", endpoints::BASE_URL, endpoints::INDICES_URL));
         let mut res = self.get(&uri_composed)?;
         let indexes_types = res.json::<Vec<types::IndexType>>()?;
         Ok(indexes_types)
@@ -113,7 +114,9 @@ impl AirlyClient {
         self,
     ) -> Result<Vec<types::MeasurementType>, Box<dyn std::error::Error>> {
         let mut uri_composed = String::new();
-        uri_composed.push_str(&format!("{}", endpoints::META_MEASUREMENTS_URL));
+        uri_composed.push_str(
+            &format!("{}/{}", endpoints::BASE_URL, endpoints::META_MEASUREMENTS_URL)
+        );
         let mut res = self.get(&uri_composed)?;
         let measurements_types = res.json::<Vec<types::MeasurementType>>()?;
         Ok(measurements_types)
@@ -272,7 +275,7 @@ fn get_measurements_query_string(id: u32, type_name: String, wind: IncludeWind) 
         "{}/{}/{}?{}indexType={}&installationId={}",
         endpoints::BASE_URL,
         endpoints::MEASUREMENTS_URL,
-        endpoints::INSTALLATIONS_URL,
+        endpoints::INSTALLATION_URL,
         wind_string,
         type_name,
         id
@@ -284,6 +287,7 @@ fn get_measurements_query_string(id: u32, type_name: String, wind: IncludeWind) 
 mod test_client {
     use std::env;
     use dotenv::dotenv;
+    const INSTALLATION_ID: u32 = 18;
     const INFO_DETAILS: &str =
         "Error while fetching data, run with: -- --nocapture, to see details.";
     const INFO_CONNECTION: &str = "Cannot establish https connection.";
@@ -295,11 +299,10 @@ mod test_client {
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            let id = 34;
             if let Ok(client) = super::AirlyClient::new(api_key) {
-                if let Ok(installation) = client.get_installation(id) {
+                if let Ok(installation) = client.get_installation(INSTALLATION_ID) {
                     println!("Fetched installation for id: \n{:?}\n", installation);
-                    assert_eq!(installation.id, id);
+                    assert_eq!(installation.id, INSTALLATION_ID as i32);
                 } else {
                     panic!(INFO_DETAILS);
                 }
@@ -316,13 +319,13 @@ mod test_client {
             panic!(API_KEY_INFO);
         } else {
             let circle = super::types::GeoCircle::new(
-                super::types::GeoPoint::new(54.347279, 18.653846).unwrap(),
+                super::types::GeoPoint::new(54.347279, 18.653846).unwrap(), // Gdansk, Poland
                 5,
             ).unwrap();
             if let Ok(client) = super::AirlyClient::new(api_key) {
-                if let Ok(installations) = client.get_nearest(circle, 3) {
+                if let Ok(installations) = client.get_nearest(circle, 123) {
                     println!("Fetched installations for nearest: \n{:?}\n", installations);
-                    assert_eq!(installations.len(), 3);
+                    assert_eq!(installations.len() > 0, true);
                 } else {
                     panic!(INFO_DETAILS);
                 }
@@ -332,7 +335,7 @@ mod test_client {
         }
     }
     #[test]
-    fn test_get_indexes() {
+    fn test_get_indices() {
         dotenv().ok();
         let api_key = env::var("API_KEY").expect("API_KEY must be set");
         if api_key.len() == 0 {
@@ -393,7 +396,7 @@ mod test_client {
             panic!(API_KEY_INFO);
         } else {
             let circle = super::types::GeoCircle::new(
-                super::types::GeoPoint::new(54.347279, 18.653846).unwrap(),
+                super::types::GeoPoint::new(54.347279, 18.653846).unwrap(), // Gdansk, Poland
                 5,
             ).unwrap();
             if let Ok(client) = super::AirlyClient::new(api_key) {
@@ -420,7 +423,7 @@ mod test_client {
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
-            let point = super::types::GeoPoint::new(54.347279, 18.653846).unwrap();
+            let point = super::types::GeoPoint::new(54.347279, 18.653846).unwrap(); // Gdansk, Poland
             if let Ok(client) = super::AirlyClient::new(api_key) {
                 let name = Some(format!("AIRLY_CAQI"));
                 let level = None;
@@ -439,7 +442,7 @@ mod test_client {
         }
     }
     #[test]
-    fn test_get_measurements_types() {
+    fn test_get_meta_measurements() {
         dotenv().ok();
         let api_key = env::var("API_KEY").expect("API_KEY must be set");
         if api_key.len() == 0 {
