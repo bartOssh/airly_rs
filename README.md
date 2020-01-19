@@ -3,7 +3,7 @@
 <p align="center">
     <img 
     width="50%" height="50%" 
-    src="https://github.com/Bartoshko/airly_rs/blob/master/assets/LogoBlue.svg"/>
+    src="https://github.com/bartOssh/airly_rs/blob/master/assets/LogoBlue.svg"/>
 </p>
 
 Rust handler for Airly API - not official. 
