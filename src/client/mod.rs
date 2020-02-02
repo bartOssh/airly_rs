@@ -100,7 +100,7 @@ impl AirlyClient {
     ///
     pub fn get_indices(self) -> Result<Vec<types::IndexType>, Box<dyn std::error::Error>> {
         let mut uri_composed = String::new();
-        uri_composed.push_str(&format!("{}/{}", endpoints::BASE_URL, endpoints::INDICES_URL));
+        uri_composed.push_str(&format!("{}/{}", endpoints::BASE_URL, endpoints::META_INDEXES_URL));
         let mut res = self.get(&uri_composed)?;
         let indexes_types = res.json::<Vec<types::IndexType>>()?;
         Ok(indexes_types)
@@ -291,11 +291,11 @@ mod test_client {
     const INFO_DETAILS: &str =
         "Error while fetching data, run with: -- --nocapture, to see details.";
     const INFO_CONNECTION: &str = "Cannot establish https connection.";
-    const API_KEY_INFO: &str = "API_KEY has wrong length";
+    const API_KEY_INFO: &str = "AIRLY_API_KEY has wrong length";
     #[test]
     fn test_get_installation() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
@@ -314,7 +314,7 @@ mod test_client {
     #[test]
     fn test_get_nearest() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
@@ -337,7 +337,7 @@ mod test_client {
     #[test]
     fn test_get_indices() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
@@ -356,7 +356,7 @@ mod test_client {
     #[test]
     fn test_get_installation_measurements() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
@@ -391,7 +391,7 @@ mod test_client {
     #[test]
     fn test_get_measurements_nearest() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
@@ -419,7 +419,7 @@ mod test_client {
     #[test]
     fn test_get_measurements_point() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {
@@ -444,7 +444,7 @@ mod test_client {
     #[test]
     fn test_get_meta_measurements() {
         dotenv().ok();
-        let api_key = env::var("API_KEY").expect("API_KEY must be set");
+        let api_key = env::var("AIRLY_API_KEY").expect("AIRLY_API_KEY must be set");
         if api_key.len() == 0 {
             panic!(API_KEY_INFO);
         } else {

@@ -10,8 +10,7 @@ Rust handler for Airly API - not official.
 
 This library purpose is to simplify calls to [Airly Api](https://developer.airly.eu/api).
 
-At this point it is implemented with synchronous code execution. 
-There is future plan for to add asynchronous calls based on new async/await rust implementation.
+It is planned in the future to add async calls.
 
 
 ## Dependencies
@@ -26,7 +25,7 @@ There is future plan for to add asynchronous calls based on new async/await rust
 
 - version is not set yet, and usage as library is not ready
 - build with: `cargo build --release`
-- test with: `cargo test --verbose`, for printing downloaded data: `API_KEY=your_api_key cargo test -- --nocapture`
+- test with: `cargo test --verbose`, for printing downloaded data: `AIRLY_API_KEY=your_api_key cargo test -- --nocapture`
 
 ### Future development steps
 

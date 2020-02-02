@@ -24,7 +24,7 @@ impl GeoPoint {
     /// # Returns GeoPoint struct if validation passed Error otherwise
     /// 
     pub fn new(lat: f32, lng: f32) -> Result<Self, Box<dyn std::error::Error>> {
-        if lat >= -MAX_LAT && lng >= -MAX_LNG && lat <= MAX_LAT && lng <= MAX_LNG {
+        if lat.abs() <= MAX_LAT && lng.abs() <= MAX_LNG {
             return Ok(Self { lat, lng });
         }
         Err(Box::new(Error::new(
